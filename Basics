@@ -1,0 +1,64 @@
+#####################################################################################################################################
+# Align genomes with FastAni
+
+# downloaded reference genomes of Pspph strains from NCBI library in fasta format
+# download anaconda
+wget https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh
+bash Anaconda3-2020.11-Linux-x86_64.sh
+
+# close and reopen terminal
+#check anaconda is installed
+conda list
+
+# download FastANi and dependents via anaconda
+mkdir Bioinformatics_FastAni
+cd Bioinformatics_FastAni
+conda search fastani  # Ask conda what versions of fastANI it has
+conda install fastani -y  # install fastani and dependencies
+fastANI -v  # confirm installation
+
+# try a first comparison between just 2 genomes 
+# 1448a = Pspph; B728a = Pss reference strains
+cd Bioinformatics_FastAni/genomedata
+fastANI -h
+fastANI -q 1448a_genome.fasta -r B728a_genome.fasta -o 1448a_vs_B728a_FastANI.out
+head  1448a_vs_B728a_FastANI.out 
+# this is the output: query genome		reference genome 	ANI value (%)	count of mapped fragments	total query fragments
+
+# try to visualise the mapping by FastANI:
+fastANI -q 1448a_genome.fasta -r B728a_genome.fasta --visualize -o 1448a_vs_B728a_FastANI.out.visual
+
+#one to multiple genomes comparison: (note the --rl instead of -r)
+#create a list of fasta files in this file
+ls *.f* > list.txt
+fastANI -q 1448a_genome.fasta --rl list.txt -o 1448a_vs_many.out
+#can we also prep for visualisation? 
+fastANI -q 1448a_genome.fasta --rl list.txt --visualize -o 1448a_vs_many.out.visual
+
+## many to many genomes comparison: fastANI --ql [QUERY_LIST] --rl [REFERENCE_LIST] -o [OUTPUT_FILE]
+fastANI --ql list.txt --rl list.txt -o fullANI.out
+#visualise
+fastANI --ql list.txt --rl list.txt --visualize -o fullANI.out.visual
+
+# download FastANI's visualize.R script from github into the working directory
+Rscript visualize.R 1448a_genome.fasta B728a_genome.fasta 1448a_vs_B728a_FastANI.out.visual
+# the output is a pdf with genome alignement and shuffling patterns (insertions, deletions, inversions etc)
+
+######################################################################################################################"
+## Whole genome comparison with pyANI:
+
+#install pyani and dependencies
+conda install pyani
+# put all genomes in one directory, here 'genomedata'
+#run the pyani analysis
+average_nucleotide_identity.py -v -l Pseud_ANI.log -i genomedata -o Pseud_ANIm -m ANIm --scheduler multiprocessing -g --gformat png,pdf
+
+
+
+
+
+
+
+
+
+
