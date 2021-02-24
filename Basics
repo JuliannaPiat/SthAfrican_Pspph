@@ -27,6 +27,9 @@ head  1448a_vs_B728a_FastANI.out
 
 # try to visualise the mapping by FastANI:
 fastANI -q 1448a_genome.fasta -r B728a_genome.fasta --visualize -o 1448a_vs_B728a_FastANI.out.visual
+# download FastANI's visualize.R script from github into the working directory
+Rscript visualize.R 1448a_genome.fasta B728a_genome.fasta 1448a_vs_B728a_FastANI.out.visual
+# the output is a pdf with genome alignement and shuffling patterns (insertions, deletions, inversions etc)
 
 #one to multiple genomes comparison: (note the --rl instead of -r)
 #create a list of fasta files in this file
@@ -37,14 +40,48 @@ fastANI -q 1448a_genome.fasta --rl list.txt --visualize -o 1448a_vs_many.out.vis
 
 ## many to many genomes comparison: fastANI --ql [QUERY_LIST] --rl [REFERENCE_LIST] -o [OUTPUT_FILE]
 fastANI --ql list.txt --rl list.txt -o fullANI.out
-#visualise
-fastANI --ql list.txt --rl list.txt --visualize -o fullANI.out.visual
+# to visualise the outputs we'll do multiple pairwise fastANI 
+#create a list of commands for fastANI
+awk  '{ a[$0] }
+END {
+        for (i in a){
+                for (j in a){
+                        if (i != j)  print ("-q " i " -r " j " --visualize -o " i "_" j".out.visual")
+                }
+        }
+}' list.txt > trial.txt
+# rename the outputfile to a more standard and readable format
+# find ".fasta_" and replace with "_"
+sed -i 's/.fasta_/_/g' trial.txt
+# find ".fna_" and replace with "_"
+sed -i 's/.fna_/_/g' trial.txt
+# find ".fasta.out" and replace with ".out"
+sed -i 's/.fasta.out/.out/g' trial.txt
+# find ".fna.out" and replave with ".out"
+sed -i 's/.fna.out/.out/g' trial.txt
 
-# download FastANI's visualize.R script from github into the working directory
-Rscript visualize.R 1448a_genome.fasta B728a_genome.fasta 1448a_vs_B728a_FastANI.out.visual
-# the output is a pdf with genome alignement and shuffling patterns (insertions, deletions, inversions etc)
+cp trial.txt pairlist.txt
+while read i ; do fastANI $i ; done < output/pairlist.txt
+# this generates a large number of .out.visual files, that we then need to pipe through the Rscript that makes a graphic out of that
 
-######################################################################################################################"
+#create a list of files to pass on to the Rscript 
+cp output/pairlist.txt output/listofvisualfiles.txt
+cd output
+# find and replace output file names
+sed -i 's/.visual/.visual.visual/g' listofvisualfiles.txt
+sed -i 's/-q//g' listofvisualfiles.txt
+sed -i 's/-r//g' listofvisualfiles.txt
+sed -i 's/-.visual.visualize -o//g' listofvisualfiles.txt
+
+#create pdf files for each comparison
+cd ../
+while read i ; do Rscript output/visualize.R $i ; done < output/listofvisualfiles.txt
+#this generates a pdf per pair
+#the R script can be modified so that the graphs are put all together in the same pdf (par function) but that's not easily readable with the amount of genomes I use
+
+
+
+######################################################################################################################
 ## Whole genome comparison with pyANI:
 
 #install pyani and dependencies
@@ -54,9 +91,9 @@ conda install pyani
 average_nucleotide_identity.py -v -l Pseud_ANI.log -i genomedata -o Pseud_ANIm -m ANIm --scheduler multiprocessing -g --gformat png,pdf
 
 
+#######################################################################################################################
 
-
-
+## Genome alignement and annotation with      :
 
 
 
